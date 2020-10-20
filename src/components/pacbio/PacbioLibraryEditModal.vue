@@ -44,6 +44,16 @@
             v-model="library.fragment_size">
           </b-form-input>
         </b-form-group>
+
+        <b-form-group id="input-group-5"
+                      :label="'Sample tag: ' + this.lib.sample_names"
+                      label-for="input-5">
+          <b-form-select ref="tagSelection" 
+                        id="tagSelection" 
+                        v-model="library.selectedSampleTagId"
+                        :options="tags">
+          </b-form-select>
+        </b-form-group>
       </b-form>
 
       <template v-slot:modal-footer="{ ok, cancel }">
@@ -62,9 +72,8 @@
 
 <script>
 
-import { createNamespacedHelpers } from 'vuex'
 import ModalHelper from '@/mixins/ModalHelper'
-const { mapActions } = createNamespacedHelpers('traction/pacbio/libraries')
+import { mapActions, mapGetters } from 'vuex'
 
 export default {
   name: 'PacbioLibraryEditModal',
@@ -75,8 +84,10 @@ export default {
         fragment_size: "",
         template_prep_kit_box_barcode: "",
         concentration: "",
-        volume: ""
-      }
+        volume: "",
+        selectedSampleTagId: ""
+      },
+      tags: [],
     }
   },
   props: {
@@ -85,6 +96,16 @@ export default {
     }
   },
   methods: {
+    async provider() {
+      try{
+        await this.setTags()
+        this.tags = this.tractionTags
+          .filter(tag => tag.tag_set_id == 1)
+          .map(tag => ({ text: tag.group_id, value: tag.id }))
+      } catch (error) {
+        this.alert("Failed to get tags: " + error.message, 'danger')
+      }
+    },
     async update() {
       try {
         await this.updateLibrary(this.library)
@@ -95,15 +116,25 @@ export default {
       this.hide()
     },
     show() {
+      this.provider()
       this.$refs['modal'].show()
       this.library = this.lib
+      this.library.selectedSampleTagId = this.lib.requests[0].tag_id
     },
     alert (message, type) {
       this.$emit('alert', message, type)
     },
-    ...mapActions([
+    ...mapActions('traction/pacbio/libraries', [
       'updateLibrary'
+    ]),
+    ...mapActions('traction', [
+      'setTags'
     ])
+  },
+  computed: {
+    ...mapGetters('traction', [
+      'tractionTags',
+    ]),
   }
 }
 

@@ -84,7 +84,22 @@ const updateLibrary= async ({ commit, getters }, payload) => {
         volume: payload.volume,
         concentration: payload.concentration,
         template_prep_kit_box_barcode: payload.template_prep_kit_box_barcode,
-        fragment_size: payload.fragment_size
+        fragment_size: payload.fragment_size,
+        relationships: {
+          requests: {
+            data: {
+                id: payload.requests[0].sample_id,
+                type: 'requests',
+                relationships: {
+                  tag: {
+                    data: {
+                      id: payload.selectedSampleTag
+                    }
+                  }
+                }
+              }
+            }
+        }
       }
     }
   }
