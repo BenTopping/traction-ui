@@ -58,16 +58,22 @@
       </template>
 
       <template v-slot:row-details="row">
-        <b-card>
-          <b-table
-              small
-              bordered
-              show-empty
-              :items= row.item.requests
-              :fields="field_in_details"
-              :filter="filter">
-          </b-table>
-        </b-card>
+        <b-row class="tagSelectionTitle">
+          <b-col>Sample name</b-col>
+          <b-col>Tag</b-col>
+        </b-row>
+
+        <b-row class="tagSelectionBox">
+          <b-col class="tagSelectionSample">{{row.item.requests[0].sample_name}}</b-col>
+          <b-col>
+            <b-form-select ref="tagSelection" 
+                          id="tagSelection" 
+                          :v-model="selectedTag"
+                          :options="tags" 
+                          @change="updateTag(row.item.requests[0].id, row.item.requests[0].tag_group_id)">
+            </b-form-select>
+          </b-col>
+        </b-row>
       </template>
 
     </b-table>
@@ -109,8 +115,7 @@ import TableHelper from '@/mixins/TableHelper'
 import Alert from '@/components/Alert'
 import PrinterModal from '@/components/PrinterModal'
 import * as consts from '@/consts/consts'
-import { createNamespacedHelpers } from 'vuex'
-const { mapActions, mapGetters } = createNamespacedHelpers('traction/pacbio/libraries')
+import { mapActions, mapGetters } from 'vuex'
 
 export default {
   name: 'Libraries',
@@ -135,17 +140,15 @@ export default {
         { key: 'actions', label: 'Actions' },
         { key: 'show_details', label: '' }
       ],
-      field_in_details: [
-        { key: 'sample_name', label: "Sample(s)"},
-        { key: 'tag_group_id', label: 'Tag(s)'}
-      ],
       filteredItems: [],
       selected: [],
+      selectedTag: "",
       filter: null,
       sortBy: 'created_at',
       sortDesc: true,
       perPage: 6,
-      currentPage: 1
+      currentPage: 1,
+      tags: []
     }
   },
   methods: {
@@ -165,24 +168,41 @@ export default {
         this.showAlert(consts.MESSAGE_ERROR_DELETION_FAILED + error.message, 'danger')
       }
     },
-    // Get all the libraries
+    updateTag(libraryId, selected_tag) {
+      console.log(libraryId)
+      console.log(selected_tag)
+    },
+    setCurrentTag(tag) {
+      this.selectedTag = tag.tag_group_id
+      console.log(this.selectedTag)
+    },
+    // Get all the libraries and tags
     // Provider function used by the bootstrap-vue table component
     async provider() {
       try{
          await this.setLibraries()
+         await this.setTags()
+         this.tags = this.tractionTags.filter(tag => tag.tag_set_id == 1)
+         this.tags = this.tags.map(tag => tag.group_id)
       } catch (error) {
-        this.showAlert("Failed to get libraries: " + error.message, 'danger')
+        this.showAlert("Failed to get libraries or tags: " + error.message, 'danger')
       }
     },
-    ...mapActions([
+    ...mapActions('traction/pacbio/libraries',[
       'deleteLibraries',
       'setLibraries'
-    ])
+    ]),
+    ...mapActions('traction', [
+      'setTags',
+    ]),
   },
   computed: {
-    ...mapGetters([
-      'libraries'
-    ])
+    ...mapGetters('traction/pacbio/libraries',[
+      'libraries',
+    ]),
+    ...mapGetters('traction', [
+      'tractionTags',
+    ]),
   },
   created() {
     // When this component is created (the 'created' lifecycle hook is called), we need to get the
@@ -191,3 +211,27 @@ export default {
   }
 }
 </script>
+<style scoped lang="scss">
+
+  .tagSelectionTitle{
+    border: solid;
+    border-width: 1px;
+    border-color: gray;
+    margin: 10px 10px 0 10px;
+    padding: 10px;
+    font-size: 20px;
+  }
+
+  .tagSelectionBox{
+    border: solid;
+    border-width: 1px;
+    border-color: gray;
+    margin: 0 10px 10px 10px;
+    padding: 10px;
+  }
+
+  .tagSelectionSample {
+    padding: 0;
+    margin: auto;
+  }
+</style>
