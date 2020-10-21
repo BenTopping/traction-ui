@@ -79,7 +79,7 @@ const updateLibrary= async ({ commit, getters }, payload) => {
   let body = {
     data: {
       id: payload.id,
-      type: 'libraries',
+      type: 'library',
       attributes: {
         volume: payload.volume,
         concentration: payload.concentration,
@@ -87,17 +87,17 @@ const updateLibrary= async ({ commit, getters }, payload) => {
         fragment_size: payload.fragment_size,
         relationships: {
           requests: {
-            data: {
+            data: [{
                 id: payload.requests[0].sample_id,
                 type: 'requests',
                 relationships: {
                   tag: {
                     data: {
-                      id: payload.selectedSampleTag
+                      id: payload.selectedSampleTagId
                     }
                   }
                 }
-              }
+              }]
             }
         }
       }
